@@ -73,6 +73,30 @@ export const SensorControlPanel: React.FC<SensorControlPanelProps> = ({
                   </span>
                 </div>
 
+                {/* Breadboard Prototyping Module */}
+                {comp.definitionId === 'module-breadboard' && (
+                  <div className="p-3 bg-[#1e1e24] border border-[#2c2c36] rounded-xl text-xs space-y-2">
+                    <div className="flex items-center justify-between text-[#a1a1aa]">
+                      <span className="font-medium text-white">Power Distribution</span>
+                      <span className="font-mono text-[11px] text-emerald-400">ACTIVE BUS</span>
+                    </div>
+                    <div className="text-[11px] text-[#71717a] leading-relaxed">
+                      Distributes +3.3V, +5.0V, and GND across multi-hole tie points. Eliminates multiple DuPont wires on any single Raspberry Pi header pin.
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20 text-[10px] font-mono">
+                        +3.3V Rail
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-orange-500/10 text-orange-300 border border-orange-500/20 text-[10px] font-mono">
+                        +5.0V Rail
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20 text-[10px] font-mono">
+                        GND Rail
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* 1. DHT22 */}
                 {comp.definitionId === 'sensor-dht22' && (
                   <div className="space-y-4">

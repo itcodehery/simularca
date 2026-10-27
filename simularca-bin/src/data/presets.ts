@@ -133,6 +133,169 @@ GPIO.cleanup()
 `,
   },
 
+  'breadboard-iot-lab': {
+    id: 'breadboard-iot-lab',
+    title: 'Raspberry Pi Zero W + Breadboard Lab',
+    description: 'Clean prototyping circuit using a solderless breadboard. Power & GND distribution rails ensure no Pi header pin has multiple wires connected.',
+    boardId: 'pi-zero-w',
+    components: [
+      {
+        definitionId: 'pi-zero-w',
+        kind: 'board',
+        x: 30,
+        y: 60,
+      },
+      {
+        definitionId: 'module-breadboard',
+        kind: 'sensor',
+        x: 430,
+        y: 50,
+      },
+      {
+        definitionId: 'sensor-ds18b20',
+        kind: 'sensor',
+        x: 920,
+        y: 30,
+        values: {
+          temperature: 26.8,
+        },
+      },
+      {
+        definitionId: 'sensor-adxl345',
+        kind: 'sensor',
+        x: 1090,
+        y: 30,
+        values: {
+          pitch: 8,
+          roll: -3,
+          accelX: 0.14,
+          accelY: -0.05,
+          accelZ: 0.98,
+          range: '±16g',
+        },
+      },
+      {
+        definitionId: 'sensor-ir',
+        kind: 'sensor',
+        x: 920,
+        y: 220,
+        values: {
+          obstacleDetected: true,
+          distance: 8.5,
+        },
+      },
+      {
+        definitionId: 'sensor-inmp441',
+        kind: 'sensor',
+        x: 1090,
+        y: 220,
+        values: {
+          soundLevel: 46,
+          triggered: false,
+        },
+      },
+    ],
+    wires: [
+      // 1. Pi Zero W to Breadboard Power & Ground (Single wire per Pi pin)
+      { fromIndex: 1, fromPinId: 'rail_3v3_1', toIndex: 0, toPinId: 'pin_1', color: '#ef4444' }, // Pi Pin 1 (3.3V) -> BB 3.3V Rail
+      { fromIndex: 1, fromPinId: 'rail_5v_1', toIndex: 0, toPinId: 'pin_2', color: '#f97316' },  // Pi Pin 2 (5.0V) -> BB 5.0V Rail
+      { fromIndex: 1, fromPinId: 'rail_gnd1_1', toIndex: 0, toPinId: 'pin_6', color: '#09090b' }, // Pi Pin 6 (GND) -> BB GND Rail 1
+      { fromIndex: 1, fromPinId: 'rail_gnd1_6', toIndex: 1, toPinId: 'rail_gnd2_1', color: '#09090b' }, // Breadboard Rail GND bridge
+
+      // 2. Breadboard Power & Ground Distribution to Sensors
+      // DS18B20 Temp Probe (Index 2)
+      { fromIndex: 2, fromPinId: 'vcc', toIndex: 1, toPinId: 'rail_3v3_2', color: '#ef4444' },
+      { fromIndex: 2, fromPinId: 'gnd', toIndex: 1, toPinId: 'rail_gnd1_2', color: '#09090b' },
+
+      // ADXL345 Accelerometer (Index 3)
+      { fromIndex: 3, fromPinId: 'vcc_in', toIndex: 1, toPinId: 'rail_3v3_3', color: '#ef4444' },
+      { fromIndex: 3, fromPinId: 'vcc', toIndex: 1, toPinId: 'rail_gnd1_3', color: '#09090b' },
+
+      // IR Obstacle Sensor (Index 4)
+      { fromIndex: 4, fromPinId: 'vcc', toIndex: 1, toPinId: 'rail_5v_2', color: '#f97316' },
+      { fromIndex: 4, fromPinId: 'gnd', toIndex: 1, toPinId: 'rail_gnd2_2', color: '#09090b' },
+
+      // INMP441 Microphone (Index 5)
+      { fromIndex: 5, fromPinId: 'vdd', toIndex: 1, toPinId: 'rail_3v3_4', color: '#ef4444' },
+      { fromIndex: 5, fromPinId: 'gnd', toIndex: 1, toPinId: 'rail_gnd1_4', color: '#09090b' },
+
+      // 3. Dedicated Sensor Signal Lines to Pi (Single wire per Pi pin)
+      // DS18B20 1-Wire Data -> Pi Pin 7 (GPIO 4)
+      { fromIndex: 2, fromPinId: 'data', toIndex: 0, toPinId: 'pin_7', color: '#eab308' },
+
+      // ADXL345 I2C SDA -> Pi Pin 3 (GPIO 2)
+      { fromIndex: 3, fromPinId: 'sda', toIndex: 0, toPinId: 'pin_3', color: '#3b82f6' },
+      // ADXL345 I2C SCL -> Pi Pin 5 (GPIO 3)
+      { fromIndex: 3, fromPinId: 'scl', toIndex: 0, toPinId: 'pin_5', color: '#f59e0b' },
+
+      // IR Sensor OUT -> Pi Pin 11 (GPIO 17)
+      { fromIndex: 4, fromPinId: 'out', toIndex: 0, toPinId: 'pin_11', color: '#10b981' },
+
+      // INMP441 I2S SCK -> Pi Pin 12 (GPIO 18)
+      { fromIndex: 5, fromPinId: 'sck', toIndex: 0, toPinId: 'pin_12', color: '#a855f7' },
+      // INMP441 I2S WS -> Pi Pin 35 (GPIO 19)
+      { fromIndex: 5, fromPinId: 'ws', toIndex: 0, toPinId: 'pin_35', color: '#c084fc' },
+      // INMP441 I2S SD -> Pi Pin 38 (GPIO 20)
+      { fromIndex: 5, fromPinId: 'sd', toIndex: 0, toPinId: 'pin_38', color: '#06b6d4' },
+    ],
+    code: `# Simularca IoT: Raspberry Pi Zero W + Breadboard Clean Prototyping
+# Sensors: DS18B20 (1-Wire), ADXL345 (I2C: 0x53), IR Sensor (GPIO 17), INMP441 (I2S)
+# Architecture: Solderless Breadboard distributes 3.3V, 5.0V, and GND rails (Zero shared Pi header pins).
+
+import time
+import math
+import RPi.GPIO as GPIO
+from smbus2 import SMBus
+
+ONE_WIRE_PIN = 4      # Physical Pin 7 -> DS18B20 Data
+IR_SENSOR_PIN = 17    # Physical Pin 11 -> IR Obstacle Out
+I2S_SCK_PIN = 18      # Physical Pin 12 -> INMP441 Clock
+ADXL_I2C_ADDR = 0x53  # Physical Pins 3 & 5 -> ADXL345 I2C
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(ONE_WIRE_PIN, GPIO.IN)
+GPIO.setup(IR_SENSOR_PIN, GPIO.IN)
+GPIO.setup(I2S_SCK_PIN, GPIO.OUT)
+
+print(">>> [INIT] Raspberry Pi Zero W + Breadboard Multi-Sensor Hub")
+print(">>> [HARDWARE] Verified: All Pi header pins have dedicated 1-to-1 DuPont connections.")
+print(">>> [POWER] Dual rails (+3.3V, +5.0V, GND) energized via solderless breadboard.")
+print(">>> Scanning I2C bus 1...")
+print("    Found ADXL345 3-Axis Accelerometer at 0x53")
+print(">>> Initializing 1-Wire bus on GPIO 4 for DS18B20 temperature probe...")
+print(">>> Initializing I2S peripheral (GPIO 18, 19, 20) for INMP441 MEMS microphone...\\n")
+
+for cycle in range(1, 11):
+    # 1. Read DS18B20 Temperature
+    temp = read_sensor_temp(ONE_WIRE_PIN)
+    
+    # 2. Read ADXL345 Accelerometer over I2C
+    adxl = read_sensor_adxl(ADXL_I2C_ADDR)
+    ax = adxl['x']
+    ay = adxl['y']
+    az = adxl['z']
+    pitch = math.atan2(-ax, math.sqrt(ay*ay + az*az)) * 57.2958
+    roll = math.atan2(ay, az) * 57.2958
+    
+    # 3. Read IR Proximity Sensor (Active LOW)
+    ir_val = GPIO.input(IR_SENSOR_PIN)
+    obstacle = (ir_val == 0)
+    
+    # 4. Read INMP441 I2S Digital MEMS Microphone
+    sound = read_sensor_sound(I2S_SCK_PIN)
+    
+    print(f"--- [Cycle {cycle:02d} / 10] ---")
+    print(f"  [DS18B20] Temp: {temp:.2f} °C")
+    print(f"  [ADXL345] Accel: X={ax:+.2f}g, Y={ay:+.2f}g, Z={az:+.2f}g (Pitch: {pitch:.1f}°, Roll: {roll:.1f}°)")
+    print(f"  [IR SENS] Beam State: {'OBSTACLE DETECTED [ALERT]' if obstacle else 'CLEAR [PATH OPEN]'}")
+    print(f"  [INMP441] Audio Level: {sound:.1f} dB SPL | 24-bit I2S Stream Active")
+    
+    time.sleep(1.0)
+
+print("\\n>>> Telemetry stream concluded. Circuit operating nominally.")
+`,
+  },
+
   'ds18b20-adxl': {
     id: 'ds18b20-adxl',
     title: 'DS18B20 1-Wire & ADXL345 Lab',

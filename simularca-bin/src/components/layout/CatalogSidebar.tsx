@@ -194,6 +194,7 @@ export const CatalogSidebar: React.FC<CatalogSidebarProps> = ({
                 if (sensor.category === 'distance') icon = <Ruler className="w-3.5 h-3.5 text-white" />;
                 if (sensor.category === 'display') icon = <Tv className="w-3.5 h-3.5 text-white" />;
                 if (sensor.category === 'actuator') icon = <Lightbulb className="w-3.5 h-3.5 text-white" />;
+                if (sensor.category === 'prototyping') icon = <Layers className="w-3.5 h-3.5 text-white" />;
 
                 return (
                   <div

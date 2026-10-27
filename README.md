@@ -21,7 +21,8 @@ Then visit [http://localhost:3000](http://localhost:3000) in your browser.
 ## Features
 
 - **Raspberry Pi Boards**: Zero, Zero W, Zero 2 W, 4 Model B, 5, Pico, and Pico W with authentic 40-pin header mapping.
-- **Sensors & Modules**: DS18B20 1-Wire Temp, ADXL345 3-Axis Accel, IR Obstacle Sensor, INMP441 I2S MEMS Mic, DHT22, MPU6050, HC-SR04, SSD1306 OLED, LEDs, Piezo Buzzer (with Web Audio tone), and Tactile Button.
+- **Sensors & Modules**: DS18B20 1-Wire Temp, ADXL345 3-Axis Accel, IR Obstacle Sensor, INMP441 I2S MEMS Mic, DHT22, MPU6050, HC-SR04, SSD1306 OLED, LEDs, Piezo Buzzer (with Web Audio tone), Tactile Button, and Solderless Breadboard.
+- **Circuit Presets**: Multi-sensor IoT hub, Breadboard 1-to-1 pin distribution lab, I2C IMU orientation, climate telemetry, and sound triggers.
 - **Interactive Wiring Canvas**: Pin snapping, color-coded jumper wires, live signal current animation, and hover pin inspection.
 - **Physical Environment Controls**: Sliders, 3D rotary angle dials, sound burst clapper, and proximity triggers.
 - **In-Browser Python Execution**: Virtualized `RPi.GPIO` and `smbus2` (I2C) runtime with Monaco Editor, Serial Console, and Oscilloscope.

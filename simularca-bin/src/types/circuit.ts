@@ -45,7 +45,7 @@ export interface BoardDefinition {
   pins: PinDefinition[];
 }
 
-export type SensorCategory = 'environmental' | 'motion' | 'audio' | 'distance' | 'display' | 'actuator' | 'input';
+export type SensorCategory = 'environmental' | 'motion' | 'audio' | 'distance' | 'display' | 'actuator' | 'input' | 'prototyping';
 
 export interface SensorDefinition {
   id: string;

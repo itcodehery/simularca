@@ -1,6 +1,77 @@
 import { SensorDefinition } from '../types/circuit';
 
+export const BREADBOARD_INTERNAL_BUSES: string[][] = [
+  ['rail_3v3_1', 'rail_3v3_2', 'rail_3v3_3', 'rail_3v3_4', 'rail_3v3_5', 'rail_3v3_6'],
+  ['rail_gnd1_1', 'rail_gnd1_2', 'rail_gnd1_3', 'rail_gnd1_4', 'rail_gnd1_5', 'rail_gnd1_6'],
+  ['rail_5v_1', 'rail_5v_2', 'rail_5v_3', 'rail_5v_4', 'rail_5v_5', 'rail_5v_6'],
+  ['rail_gnd2_1', 'rail_gnd2_2', 'rail_gnd2_3', 'rail_gnd2_4', 'rail_gnd2_5', 'rail_gnd2_6'],
+  ['row_1_a', 'row_1_b'],
+  ['row_2_a', 'row_2_b'],
+  ['row_3_a', 'row_3_b'],
+  ['row_4_a', 'row_4_b'],
+  ['row_5_a', 'row_5_b'],
+];
+
 export const SENSORS: Record<string, SensorDefinition> = {
+  'module-breadboard': {
+    id: 'module-breadboard',
+    type: 'BREADBOARD',
+    name: 'Solderless Breadboard',
+    category: 'prototyping',
+    description: 'Half-size breadboard with dual 3.3V/5V power buses, common ground distribution rails, and terminal tie rows.',
+    defaultWidth: 460,
+    defaultHeight: 210,
+    pins: [
+      // Top 3.3V Rail (+)
+      { id: 'rail_3v3_1', name: '+3V3 (1)', type: 'POWER_3V3', x: 14, y: 13, description: '3.3V Power Rail - Point 1' },
+      { id: 'rail_3v3_2', name: '+3V3 (2)', type: 'POWER_3V3', x: 28, y: 13, description: '3.3V Power Rail - Point 2' },
+      { id: 'rail_3v3_3', name: '+3V3 (3)', type: 'POWER_3V3', x: 42, y: 13, description: '3.3V Power Rail - Point 3' },
+      { id: 'rail_3v3_4', name: '+3V3 (4)', type: 'POWER_3V3', x: 56, y: 13, description: '3.3V Power Rail - Point 4' },
+      { id: 'rail_3v3_5', name: '+3V3 (5)', type: 'POWER_3V3', x: 70, y: 13, description: '3.3V Power Rail - Point 5' },
+      { id: 'rail_3v3_6', name: '+3V3 (6)', type: 'POWER_3V3', x: 84, y: 13, description: '3.3V Power Rail - Point 6' },
+
+      // Top Ground Rail (-)
+      { id: 'rail_gnd1_1', name: 'GND1 (1)', type: 'GND', x: 14, y: 25, description: 'Ground Rail 1 - Point 1' },
+      { id: 'rail_gnd1_2', name: 'GND1 (2)', type: 'GND', x: 28, y: 25, description: 'Ground Rail 1 - Point 2' },
+      { id: 'rail_gnd1_3', name: 'GND1 (3)', type: 'GND', x: 42, y: 25, description: 'Ground Rail 1 - Point 3' },
+      { id: 'rail_gnd1_4', name: 'GND1 (4)', type: 'GND', x: 56, y: 25, description: 'Ground Rail 1 - Point 4' },
+      { id: 'rail_gnd1_5', name: 'GND1 (5)', type: 'GND', x: 70, y: 25, description: 'Ground Rail 1 - Point 5' },
+      { id: 'rail_gnd1_6', name: 'GND1 (6)', type: 'GND', x: 84, y: 25, description: 'Ground Rail 1 - Point 6' },
+
+      // Center Terminal Strips (Rows A & B)
+      { id: 'row_1_a', name: 'Row 1 (A)', type: 'GPIO', x: 18, y: 44, description: 'Terminal Strip 1 - Upper Pin' },
+      { id: 'row_1_b', name: 'Row 1 (B)', type: 'GPIO', x: 18, y: 56, description: 'Terminal Strip 1 - Lower Pin' },
+
+      { id: 'row_2_a', name: 'Row 2 (A)', type: 'GPIO', x: 34, y: 44, description: 'Terminal Strip 2 - Upper Pin' },
+      { id: 'row_2_b', name: 'Row 2 (B)', type: 'GPIO', x: 34, y: 56, description: 'Terminal Strip 2 - Lower Pin' },
+
+      { id: 'row_3_a', name: 'Row 3 (A)', type: 'GPIO', x: 50, y: 44, description: 'Terminal Strip 3 - Upper Pin' },
+      { id: 'row_3_b', name: 'Row 3 (B)', type: 'GPIO', x: 50, y: 56, description: 'Terminal Strip 3 - Lower Pin' },
+
+      { id: 'row_4_a', name: 'Row 4 (A)', type: 'GPIO', x: 66, y: 44, description: 'Terminal Strip 4 - Upper Pin' },
+      { id: 'row_4_b', name: 'Row 4 (B)', type: 'GPIO', x: 66, y: 56, description: 'Terminal Strip 4 - Lower Pin' },
+
+      { id: 'row_5_a', name: 'Row 5 (A)', type: 'GPIO', x: 82, y: 44, description: 'Terminal Strip 5 - Upper Pin' },
+      { id: 'row_5_b', name: 'Row 5 (B)', type: 'GPIO', x: 82, y: 56, description: 'Terminal Strip 5 - Lower Pin' },
+
+      // Bottom 5V Rail (+)
+      { id: 'rail_5v_1', name: '+5V (1)', type: 'POWER_5V', x: 14, y: 75, description: '5.0V Power Rail - Point 1' },
+      { id: 'rail_5v_2', name: '+5V (2)', type: 'POWER_5V', x: 28, y: 75, description: '5.0V Power Rail - Point 2' },
+      { id: 'rail_5v_3', name: '+5V (3)', type: 'POWER_5V', x: 42, y: 75, description: '5.0V Power Rail - Point 3' },
+      { id: 'rail_5v_4', name: '+5V (4)', type: 'POWER_5V', x: 56, y: 75, description: '5.0V Power Rail - Point 4' },
+      { id: 'rail_5v_5', name: '+5V (5)', type: 'POWER_5V', x: 70, y: 75, description: '5.0V Power Rail - Point 5' },
+      { id: 'rail_5v_6', name: '+5V (6)', type: 'POWER_5V', x: 84, y: 75, description: '5.0V Power Rail - Point 6' },
+
+      // Bottom Ground Rail (-)
+      { id: 'rail_gnd2_1', name: 'GND2 (1)', type: 'GND', x: 14, y: 87, description: 'Ground Rail 2 - Point 1' },
+      { id: 'rail_gnd2_2', name: 'GND2 (2)', type: 'GND', x: 28, y: 87, description: 'Ground Rail 2 - Point 2' },
+      { id: 'rail_gnd2_3', name: 'GND2 (3)', type: 'GND', x: 42, y: 87, description: 'Ground Rail 2 - Point 3' },
+      { id: 'rail_gnd2_4', name: 'GND2 (4)', type: 'GND', x: 56, y: 87, description: 'Ground Rail 2 - Point 4' },
+      { id: 'rail_gnd2_5', name: 'GND2 (5)', type: 'GND', x: 70, y: 87, description: 'Ground Rail 2 - Point 5' },
+      { id: 'rail_gnd2_6', name: 'GND2 (6)', type: 'GND', x: 84, y: 87, description: 'Ground Rail 2 - Point 6' },
+    ],
+    defaultValues: {},
+  },
   'sensor-dht22': {
     id: 'sensor-dht22',
     type: 'DHT22',

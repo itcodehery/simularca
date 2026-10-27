@@ -67,6 +67,7 @@ export function validateCircuit(
     if (comp.kind !== 'sensor') continue;
     const def = SENSORS[comp.definitionId];
     if (!def) continue;
+    if (def.category === 'prototyping') continue; // Prototyping breadboard is a passive distribution canvas
 
     const compWires = wires.filter(
       (w) => w.fromComponentId === comp.instanceId || w.toComponentId === comp.instanceId
@@ -128,7 +129,44 @@ export function validateCircuit(
     }
   }
 
-  if (issues.length === 0) {
+  // Check Raspberry Pi header pin loading (breadboard vs direct jumper wire sharing)
+  if (boardComponent) {
+    const boardWireCounts = new Map<string, number>();
+    for (const wire of wires) {
+      if (wire.fromComponentId === boardComponent.instanceId) {
+        boardWireCounts.set(wire.fromPinId, (boardWireCounts.get(wire.fromPinId) || 0) + 1);
+      }
+      if (wire.toComponentId === boardComponent.instanceId) {
+        boardWireCounts.set(wire.toPinId, (boardWireCounts.get(wire.toPinId) || 0) + 1);
+      }
+    }
+
+    let overloadedPins = 0;
+    boardWireCounts.forEach((count) => {
+      if (count > 1) {
+        overloadedPins++;
+      }
+    });
+
+    if (overloadedPins === 0 && boardWireCounts.size > 0) {
+      issues.push({
+        severity: 'info',
+        title: 'Pi Header Loading: Optimal (1:1)',
+        message: 'All active Raspberry Pi header pins have dedicated single wires (0 shared pins). Complies with solderless prototyping standards.',
+        componentIds: [boardComponent.instanceId],
+      });
+    } else if (overloadedPins > 0) {
+      issues.push({
+        severity: 'info',
+        title: 'Multiple Wires on Pi Header Pins',
+        message: `${overloadedPins} Raspberry Pi header pin(s) have 2+ wires connected. In physical hardware, use a breadboard to distribute power/GND cleanly.`,
+        componentIds: [boardComponent.instanceId],
+      });
+    }
+  }
+
+  const hasErrorsOrWarnings = issues.some((i) => i.severity === 'error' || i.severity === 'warning');
+  if (!hasErrorsOrWarnings) {
     issues.push({
       severity: 'info',
       title: 'Circuit Healthy',

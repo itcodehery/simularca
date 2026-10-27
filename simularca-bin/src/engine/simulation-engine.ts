@@ -5,7 +5,7 @@ import {
   TelemetryPoint,
 } from '../types/circuit';
 import { BOARDS } from '../data/boards';
-import { SENSORS } from '../data/sensors';
+import { SENSORS, BREADBOARD_INTERNAL_BUSES } from '../data/sensors';
 
 export interface LogMessage {
   id: string;
@@ -99,20 +99,83 @@ export class SimulationEngine {
   }
 
   private propagateWires(components: PlacedComponent[], wires: WireConnection[]) {
-    for (const wire of wires) {
-      const fromKey = `${wire.fromComponentId}:${wire.fromPinId}`;
-      const toKey = `${wire.toComponentId}:${wire.toPinId}`;
+    const breadboardComps = components.filter(
+      (c) => c.kind === 'sensor' && c.definitionId === 'module-breadboard'
+    );
 
-      const fromState = this.pinStates.get(fromKey);
-      const toState = this.pinStates.get(toKey);
+    let changed = true;
+    let iterations = 0;
+    const maxIterations = 8;
 
-      if (fromState && toState) {
-        if (fromState.logicState === 'HIGH' || fromState.voltage > 0) {
-          toState.voltage = fromState.voltage;
-          toState.logicState = fromState.logicState;
-        } else if (toState.logicState === 'HIGH' || toState.voltage > 0) {
-          fromState.voltage = toState.voltage;
-          fromState.logicState = toState.logicState;
+    while (changed && iterations < maxIterations) {
+      changed = false;
+      iterations++;
+
+      // 1. Propagate across jumper wires
+      for (const wire of wires) {
+        const fromKey = `${wire.fromComponentId}:${wire.fromPinId}`;
+        const toKey = `${wire.toComponentId}:${wire.toPinId}`;
+
+        const fromState = this.pinStates.get(fromKey);
+        const toState = this.pinStates.get(toKey);
+
+        if (fromState && toState) {
+          if (fromState.voltage > 0 || fromState.logicState === 'HIGH') {
+            if (toState.voltage !== fromState.voltage || toState.logicState !== fromState.logicState) {
+              toState.voltage = fromState.voltage;
+              toState.logicState = fromState.logicState;
+              changed = true;
+            }
+          } else if (toState.voltage > 0 || toState.logicState === 'HIGH') {
+            if (fromState.voltage !== toState.voltage || fromState.logicState !== toState.logicState) {
+              fromState.voltage = toState.voltage;
+              fromState.logicState = toState.logicState;
+              changed = true;
+            }
+          } else if (fromState.logicState === 'LOW' && toState.logicState !== 'LOW') {
+            toState.voltage = 0;
+            toState.logicState = 'LOW';
+            changed = true;
+          } else if (toState.logicState === 'LOW' && fromState.logicState !== 'LOW') {
+            fromState.voltage = 0;
+            fromState.logicState = 'LOW';
+            changed = true;
+          }
+        }
+      }
+
+      // 2. Propagate across breadboard internal buses
+      for (const bb of breadboardComps) {
+        for (const bus of BREADBOARD_INTERNAL_BUSES) {
+          let maxVoltage = 0;
+          let busLogic: PinRuntimeState['logicState'] = 'FLOATING';
+
+          for (const pinId of bus) {
+            const st = this.pinStates.get(`${bb.instanceId}:${pinId}`);
+            if (st) {
+              if (st.voltage > maxVoltage) {
+                maxVoltage = st.voltage;
+              }
+              if (st.logicState === 'HIGH') {
+                busLogic = 'HIGH';
+              } else if (st.logicState === 'LOW' && busLogic === 'FLOATING') {
+                busLogic = 'LOW';
+              }
+            }
+          }
+
+          if (maxVoltage > 0 || busLogic !== 'FLOATING') {
+            for (const pinId of bus) {
+              const st = this.pinStates.get(`${bb.instanceId}:${pinId}`);
+              if (st) {
+                if (st.voltage !== maxVoltage || (st.logicState !== busLogic && maxVoltage > 0)) {
+                  st.voltage = maxVoltage;
+                  st.logicState = busLogic;
+                  changed = true;
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -234,11 +297,37 @@ export class SimulationEngine {
       );
       if (!wire) return null;
 
-      const sensorInstanceId =
+      let sensorInstanceId =
         wire.fromComponentId === board.instanceId ? wire.toComponentId : wire.fromComponentId;
-      const sensorPinId =
+      let sensorPinId =
         wire.fromComponentId === board.instanceId ? wire.toPinId : wire.fromPinId;
-      const sensorComp = components.find((c) => c.instanceId === sensorInstanceId);
+      let sensorComp = components.find((c) => c.instanceId === sensorInstanceId);
+
+      // If connected to a breadboard, trace through its internal buses
+      if (sensorComp?.definitionId === 'module-breadboard') {
+        const bus = BREADBOARD_INTERNAL_BUSES.find((b) => b.includes(sensorPinId));
+        if (bus) {
+          for (const busPinId of bus) {
+            if (busPinId === sensorPinId) continue;
+            const nextWire = wires.find(
+              (w) =>
+                (w.fromComponentId === sensorInstanceId && w.fromPinId === busPinId) ||
+                (w.toComponentId === sensorInstanceId && w.toPinId === busPinId)
+            );
+            if (nextWire) {
+              const nextCompId =
+                nextWire.fromComponentId === sensorInstanceId ? nextWire.toComponentId : nextWire.fromComponentId;
+              const nextPin =
+                nextWire.fromComponentId === sensorInstanceId ? nextWire.toPinId : nextWire.fromPinId;
+              const nextComp = components.find((c) => c.instanceId === nextCompId);
+              if (nextComp && nextComp.kind === 'sensor' && nextComp.definitionId !== 'module-breadboard') {
+                return { sensorComp: nextComp, sensorPinId: nextPin };
+              }
+            }
+          }
+        }
+      }
+
       return { sensorComp, sensorPinId };
     };
 

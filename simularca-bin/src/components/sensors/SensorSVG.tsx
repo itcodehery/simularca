@@ -353,6 +353,124 @@ export const SensorSVG: React.FC<SensorSVGProps> = ({
         );
       }
 
+      case 'BREADBOARD': {
+        return (
+          <g id="breadboard-body">
+            {/* Solderless Breadboard Matte Body */}
+            <rect
+              x="4"
+              y="4"
+              width={width - 8}
+              height={height - 8}
+              rx="10"
+              fill="#18181c"
+              stroke="#2e2e38"
+              strokeWidth="2"
+            />
+            {/* Subtle inner bevel */}
+            <rect
+              x="8"
+              y="8"
+              width={width - 16}
+              height={height - 16}
+              rx="8"
+              fill="#141417"
+              stroke="#222228"
+              strokeWidth="1"
+            />
+
+            {/* Top Power Distribution Rails */}
+            {/* 3.3V Positive Rail (Red Line) */}
+            <line x1="30" y1="21" x2={width - 30} y2="21" stroke="#ef4444" strokeWidth="2" strokeDasharray="6 3" strokeOpacity="0.75" />
+            <text x="18" y="24" fill="#ef4444" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">+</text>
+            <text x={width - 16} y="24" fill="#ef4444" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">+3V3</text>
+
+            {/* GND Negative Rail 1 (Blue Line) */}
+            <line x1="30" y1="46" x2={width - 30} y2="46" stroke="#38bdf8" strokeWidth="2" strokeDasharray="6 3" strokeOpacity="0.75" />
+            <text x="18" y="49" fill="#38bdf8" fontSize="13" fontWeight="bold" textAnchor="middle" fontFamily="monospace">-</text>
+            <text x={width - 16} y="49" fill="#38bdf8" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">GND</text>
+
+            {/* Middle Divider DIP IC Channel / Trench */}
+            <rect
+              x="20"
+              y="100"
+              width={width - 40}
+              height="10"
+              rx="3"
+              fill="#09090b"
+              stroke="#24242b"
+              strokeWidth="1"
+            />
+            <text
+              x={width / 2}
+              y="108"
+              fill="#52525b"
+              fontSize="7.5"
+              fontWeight="bold"
+              fontFamily="monospace"
+              textAnchor="middle"
+              letterSpacing="2"
+            >
+              SIMULARCA SOLDERLESS BREADBOARD
+            </text>
+
+            {/* Terminal Row Bus Indicators (Tie lines connecting Row A & B) */}
+            {[18, 34, 50, 66, 82].map((xPct, idx) => {
+              const xPos = (xPct / 100) * width;
+              return (
+                <g key={idx}>
+                  {/* Subtle bus connecting line */}
+                  <line
+                    x1={xPos}
+                    y1={height * 0.44}
+                    x2={xPos}
+                    y2={height * 0.56}
+                    stroke="#3f3f46"
+                    strokeWidth="1.5"
+                    strokeDasharray="2 2"
+                    strokeOpacity="0.6"
+                  />
+                  {/* Row Number Marker */}
+                  <text
+                    x={xPos}
+                    y="82"
+                    fill="#71717a"
+                    fontSize="8.5"
+                    fontWeight="bold"
+                    fontFamily="monospace"
+                    textAnchor="middle"
+                  >
+                    {idx + 1}
+                  </text>
+                  <text
+                    x={xPos}
+                    y="132"
+                    fill="#71717a"
+                    fontSize="8.5"
+                    fontWeight="bold"
+                    fontFamily="monospace"
+                    textAnchor="middle"
+                  >
+                    {idx + 1}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Bottom Power Distribution Rails */}
+            {/* 5V Positive Rail (Orange/Red Line) */}
+            <line x1="30" y1="164" x2={width - 30} y2="164" stroke="#f97316" strokeWidth="2" strokeDasharray="6 3" strokeOpacity="0.75" />
+            <text x="18" y="167" fill="#f97316" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">+</text>
+            <text x={width - 16} y="167" fill="#f97316" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">+5V</text>
+
+            {/* GND Negative Rail 2 (Blue Line) */}
+            <line x1="30" y1="189" x2={width - 30} y2="189" stroke="#38bdf8" strokeWidth="2" strokeDasharray="6 3" strokeOpacity="0.75" />
+            <text x="18" y="192" fill="#38bdf8" fontSize="13" fontWeight="bold" textAnchor="middle" fontFamily="monospace">-</text>
+            <text x={width - 16} y="192" fill="#38bdf8" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">GND</text>
+          </g>
+        );
+      }
+
       default:
         return (
           <rect x="4" y="4" width={width - 8} height={height - 8} rx="6" fill="#1e293b" stroke="#475569" />
@@ -376,8 +494,18 @@ export const SensorSVG: React.FC<SensorSVGProps> = ({
 
           let ringColor = '#eab308';
           if (pin.type === 'POWER_3V3' || pin.type === 'POWER_5V') ringColor = '#ef4444';
-          else if (pin.type === 'GND') ringColor = '#0f172a';
+          else if (pin.type === 'GND') ringColor = '#38bdf8';
           else if (pin.type === 'I2C_SDA' || pin.type === 'I2C_SCL') ringColor = '#3b82f6';
+
+          let pinLabel = pin.name.split(' ')[0];
+          if (sensor.type === 'BREADBOARD') {
+            if (pin.id.startsWith('rail_3v3') || pin.id.startsWith('rail_5v')) pinLabel = '+';
+            else if (pin.id.includes('gnd')) pinLabel = '-';
+            else if (pin.id.startsWith('row_')) {
+              const parts = pin.id.split('_');
+              pinLabel = `${parts[1]}${parts[2]?.toUpperCase()}`;
+            }
+          }
 
           return (
             <g
@@ -429,7 +557,7 @@ export const SensorSVG: React.FC<SensorSVGProps> = ({
                 textAnchor="middle"
                 className="pointer-events-none"
               >
-                {pin.name.split(' ')[0]}
+                {pinLabel}
               </text>
             </g>
           );

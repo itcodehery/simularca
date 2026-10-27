@@ -24,6 +24,7 @@
 - **Active Piezo Buzzer**: Synthesizes genuine 2.4 kHz acoustic tones via the Web Audio API when energized.
 - **LED Modules (Red / Green)**: Dynamic glow halos and state tracking when driven HIGH.
 - **Tactile Push Button**: Momentary interactive input with pull-down logic.
+- **Solderless Breadboard**: Half-size breadboard with dual 3.3V/5.0V positive power rails, common GND distribution rails, and terminal tie rows (eliminates multiple wires sharing single Raspberry Pi header pins).
 
 ### 3. Interactive Wiring Canvas
 - **Pan & Zoom**: Smooth infinite navigation with circuit blueprint grid.
@@ -50,10 +51,12 @@
 
 ### 6. Pre-Configured Circuit Presets
 1. **Multi-Sensor Hub (Default)**: Raspberry Pi Zero W + DS18B20 + ADXL345 + IR Sensor + INMP441 Microphone.
-2. **DHT22 Weather Station**: Pi Zero W + DHT22 on GPIO 4 + Status LED.
-3. **MPU6050 Orientation Lab**: Pi Zero W + MPU6050 on I2C + Tilt Warning LED.
-4. **Sound-Activated Alarm**: Pi Zero W + Microphone + Active Buzzer + LED.
-5. **Smart OLED Dashboard**: Pi 4B + SSD1306 OLED + Climate sensors.
+2. **Raspberry Pi Zero W + Breadboard Lab**: Solderless breadboard distributing 3.3V, 5.0V, and GND rails so every active Pi header pin has a dedicated single wire (zero overloaded header pins).
+3. **DS18B20 1-Wire & ADXL345 Lab**: Dallas 1-Wire temperature probe on GPIO 4 with ADXL345 accelerometer and IR sensor.
+4. **DHT22 Weather Station**: Pi Zero W + DHT22 on GPIO 4 + Status LED.
+5. **MPU6050 Orientation Lab**: Pi Zero W + MPU6050 on I2C + Tilt Warning LED.
+6. **Sound-Activated Alarm**: Pi Zero W + Microphone + Active Buzzer + LED.
+7. **Smart OLED Dashboard**: Pi 4B + SSD1306 OLED + Climate sensors.
 
 ---
 
