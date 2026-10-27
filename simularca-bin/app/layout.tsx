@@ -1,15 +1,52 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const genova = localFont({
+  src: [
+    {
+      path: "./fonts/genova/Genova-Thin.otf",
+      weight: "100",
+      style: "normal",
+    },
+    {
+      path: "./fonts/genova/Genova-ThinItalic.otf",
+      weight: "100",
+      style: "italic",
+    },
+    {
+      path: "./fonts/genova/Genova.otf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/genova/Genova-Italic.otf",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "./fonts/genova/Genova-Medium.otf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "./fonts/genova/Genova-MediumItalic.otf",
+      weight: "500",
+      style: "italic",
+    },
+    {
+      path: "./fonts/genova/Genova-Black.otf",
+      weight: "900",
+      style: "normal",
+    },
+    {
+      path: "./fonts/genova/Genova-BlackItalic.otf",
+      weight: "900",
+      style: "italic",
+    },
+  ],
+  variable: "--font-genova",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -23,16 +60,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased dark bg-[#0b0b0d]">
+    <html lang="en" className={`${genova.variable} h-full antialiased dark bg-[#0b0b0d]`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col font-sans bg-[#0b0b0d] text-[#f4f4f6]">
+      <body className={`${genova.className} min-h-full flex flex-col bg-[#0b0b0d] text-[#f4f4f6]`}>
         {children}
       </body>
     </html>

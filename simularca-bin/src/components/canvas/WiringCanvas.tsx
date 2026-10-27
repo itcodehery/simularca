@@ -96,6 +96,22 @@ export const WiringCanvas: React.FC<WiringCanvasProps> = ({
     [components]
   );
 
+  // Helper to get connected component and pin definition
+  const getPinDetails = useCallback(
+    (componentId: string, pinId: string) => {
+      const comp = components.find((c) => c.instanceId === componentId);
+      if (!comp) return null;
+      let pinDef: PinDefinition | undefined;
+      if (comp.kind === 'board') {
+        pinDef = BOARDS[comp.definitionId]?.pins.find((p) => p.id === pinId);
+      } else {
+        pinDef = SENSORS[comp.definitionId]?.pins.find((p) => p.id === pinId);
+      }
+      return { comp, pinDef };
+    },
+    [components]
+  );
+
   // Canvas Mouse down
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0 && !draggingCompId && !pendingWire) {
@@ -274,6 +290,16 @@ export const WiringCanvas: React.FC<WiringCanvasProps> = ({
             const isHigh = fromState?.logicState === 'HIGH';
             const isHovered = hoveredWireId === wire.id;
 
+            // Check if this wire is connected to the currently hovered pin
+            const isConnectedToHoveredPin =
+              Boolean(hoveredPin) &&
+              ((wire.fromComponentId === hoveredPin!.componentId && wire.fromPinId === hoveredPin!.pin.id) ||
+                (wire.toComponentId === hoveredPin!.componentId && wire.toPinId === hoveredPin!.pin.id));
+
+            const isAnyPinHovered = Boolean(hoveredPin);
+            const wireOpacity = isAnyPinHovered ? (isConnectedToHoveredPin ? 1.0 : 0.25) : 1.0;
+            const wireStrokeWidth = isConnectedToHoveredPin ? 5.0 : isHovered ? 4.5 : 3.0;
+
             const dx = to.x - from.x;
             const dy = to.y - from.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
@@ -288,22 +314,43 @@ export const WiringCanvas: React.FC<WiringCanvasProps> = ({
             const midX = (from.x + to.x) / 2;
             const midY = (from.y + to.y) / 2 + sag * 0.75;
 
+            // Identify the other end pin when one end is hovered
+            const otherEndCoords = isConnectedToHoveredPin
+              ? wire.fromComponentId === hoveredPin!.componentId && wire.fromPinId === hoveredPin!.pin.id
+                ? to
+                : from
+              : null;
+
             return (
               <g
                 key={wire.id}
                 onMouseEnter={() => setHoveredWireId(wire.id)}
                 onMouseLeave={() => setHoveredWireId(null)}
-                className="cursor-pointer group"
+                style={{ opacity: wireOpacity }}
+                className="cursor-pointer group transition-opacity duration-150"
               >
                 {/* Hit target */}
                 <path d={pathData} fill="none" stroke="transparent" strokeWidth="20" />
+
+                {/* Outer Glow when connected to hovered pin */}
+                {isConnectedToHoveredPin && (
+                  <path
+                    d={pathData}
+                    fill="none"
+                    stroke="#ffffff"
+                    strokeWidth="8.0"
+                    opacity="0.3"
+                    strokeLinecap="round"
+                    className="animate-pulse"
+                  />
+                )}
 
                 {/* Wire Body */}
                 <path
                   d={pathData}
                   fill="none"
                   stroke={wire.color}
-                  strokeWidth={isHovered ? 4.5 : 3.0}
+                  strokeWidth={wireStrokeWidth}
                   strokeLinecap="round"
                   filter="url(#neon-glow)"
                   className="transition-all duration-150"
@@ -325,6 +372,29 @@ export const WiringCanvas: React.FC<WiringCanvasProps> = ({
                 {/* Pin Terminal Endpoints */}
                 <circle cx={from.x} cy={from.y} r="4" fill="#141416" stroke={wire.color} strokeWidth="2" />
                 <circle cx={to.x} cy={to.y} r="4" fill="#141416" stroke={wire.color} strokeWidth="2" />
+
+                {/* Glowing Target Ring on the connected other pin */}
+                {otherEndCoords && (
+                  <g pointerEvents="none">
+                    <circle
+                      cx={otherEndCoords.x}
+                      cy={otherEndCoords.y}
+                      r="11"
+                      fill="none"
+                      stroke={wire.color}
+                      strokeWidth="2.5"
+                      className="animate-ping"
+                    />
+                    <circle
+                      cx={otherEndCoords.x}
+                      cy={otherEndCoords.y}
+                      r="8"
+                      fill="none"
+                      stroke="#ffffff"
+                      strokeWidth="1.5"
+                    />
+                  </g>
+                )}
 
                 {/* Delete button on hover */}
                 {isHovered && (
@@ -451,43 +521,118 @@ export const WiringCanvas: React.FC<WiringCanvasProps> = ({
 
       {/* High-Contrast White Tooltip Popover (Matching reference Image 1 popover style) */}
       {hoveredPin && (
-        <div
-          style={{
-            left: hoveredPin.screenX + 16,
-            top: hoveredPin.screenY - 24,
-          }}
-          className="fixed z-50 pointer-events-none bg-white text-black shadow-2xl rounded-xl px-3 py-2 text-xs font-sans min-w-[200px] animate-in fade-in zoom-in-95"
-        >
-          <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-1.5">
-            <span className="font-bold text-black font-mono">{hoveredPin.pin.name}</span>
-            <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-black text-white">
-              {hoveredPin.pin.type}
-            </span>
-          </div>
-          {hoveredPin.pin.physicalPin && (
-            <div className="flex justify-between text-[#64748b] text-[11px] font-mono">
-              <span>Header Pin:</span>
-              <span className="text-black font-bold">#{hoveredPin.pin.physicalPin}</span>
-            </div>
-          )}
-          {hoveredPin.pin.bcm !== undefined && (
-            <div className="flex justify-between text-[#64748b] text-[11px] font-mono">
-              <span>BCM GPIO:</span>
-              <span className="text-black font-bold">GPIO {hoveredPin.pin.bcm}</span>
-            </div>
-          )}
-          {(() => {
-            const state = pinStates.get(`${hoveredPin.componentId}:${hoveredPin.pin.id}`);
-            return (
-              <div className="flex justify-between text-[#64748b] text-[11px] font-mono mt-0.5">
-                <span>Signal:</span>
-                <span className="font-bold text-black">
-                  {state?.logicState ?? 'FLOATING'} ({state?.voltage.toFixed(1) ?? '0.0'}V)
+        (() => {
+          const currentComp = components.find((c) => c.instanceId === hoveredPin.componentId);
+          const connectedWires = wires.filter(
+            (w) =>
+              (w.fromComponentId === hoveredPin.componentId && w.fromPinId === hoveredPin.pin.id) ||
+              (w.toComponentId === hoveredPin.componentId && w.toPinId === hoveredPin.pin.id)
+          );
+          const state = pinStates.get(`${hoveredPin.componentId}:${hoveredPin.pin.id}`);
+
+          return (
+            <div
+              style={{
+                left: hoveredPin.screenX + 16,
+                top: hoveredPin.screenY - 24,
+              }}
+              className="fixed z-50 pointer-events-none bg-white text-black shadow-2xl rounded-2xl px-3.5 py-2.5 text-xs font-sans min-w-[240px] max-w-[320px] animate-in fade-in zoom-in-95 border border-slate-200"
+            >
+              {/* Header: Component & Pin Name */}
+              <div className="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+                <div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
+                    {currentComp?.name || 'Device'}
+                  </div>
+                  <div className="font-extrabold text-black font-mono text-sm leading-tight">
+                    {hoveredPin.pin.name}
+                  </div>
+                </div>
+                <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-black text-white shrink-0">
+                  {hoveredPin.pin.type}
                 </span>
               </div>
-            );
-          })()}
-        </div>
+
+              {/* Pin Details */}
+              <div className="space-y-1 text-[11px] font-mono">
+                {hoveredPin.pin.physicalPin && (
+                  <div className="flex justify-between text-[#64748b]">
+                    <span>Header Pin:</span>
+                    <span className="text-black font-bold">#{hoveredPin.pin.physicalPin}</span>
+                  </div>
+                )}
+                {hoveredPin.pin.bcm !== undefined && (
+                  <div className="flex justify-between text-[#64748b]">
+                    <span>BCM GPIO:</span>
+                    <span className="text-black font-bold">GPIO {hoveredPin.pin.bcm}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-[#64748b]">
+                  <span>Signal State:</span>
+                  <span className="font-bold text-black">
+                    {state?.logicState ?? 'FLOATING'} ({state?.voltage.toFixed(1) ?? '0.0'}V)
+                  </span>
+                </div>
+              </div>
+
+              {/* Connected Wires Section */}
+              <div className="mt-2.5 pt-2 border-t border-slate-200">
+                <div className="text-[10px] uppercase font-bold text-[#64748b] tracking-wider mb-1.5 flex items-center justify-between">
+                  <span>Connected Wires</span>
+                  <span className="font-mono text-[10px] font-bold text-black bg-slate-100 px-1.5 py-0.2 rounded-full border border-slate-300">
+                    {connectedWires.length}
+                  </span>
+                </div>
+
+                {connectedWires.length === 0 ? (
+                  <div className="text-[11px] text-slate-400 italic flex items-center gap-1.5 py-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                    <span>No wire connected (Click to wire)</span>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {connectedWires.map((w) => {
+                      const other =
+                        w.fromComponentId === hoveredPin.componentId && w.fromPinId === hoveredPin.pin.id
+                          ? { compId: w.toComponentId, pinId: w.toPinId }
+                          : { compId: w.fromComponentId, pinId: w.fromPinId };
+                      const details = getPinDetails(other.compId, other.pinId);
+                      if (!details) return null;
+
+                      return (
+                        <div
+                          key={w.id}
+                          className="bg-slate-100/90 border border-slate-200/90 p-1.5 rounded-xl text-[11px]"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/20 shadow-sm"
+                                style={{ backgroundColor: w.color }}
+                              />
+                              <span className="font-bold text-black truncate">
+                                {details.comp.name}
+                              </span>
+                            </div>
+                            <span className="font-mono font-bold text-sky-700 bg-sky-100 px-1.5 py-0.5 rounded-md text-[10px] shrink-0 border border-sky-200">
+                              {details.pinDef?.name}
+                            </span>
+                          </div>
+                          {details.pinDef?.physicalPin && (
+                            <div className="text-[9.5px] text-[#64748b] font-mono mt-0.5 pl-4">
+                              Header Pin #{details.pinDef.physicalPin}
+                              {details.pinDef.bcm !== undefined ? ` (GPIO ${details.pinDef.bcm})` : ''}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()
       )}
     </div>
   );
